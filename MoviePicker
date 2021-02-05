@@ -11,6 +11,7 @@
 
 #change to your prefered video player with appropriate arguements
 VIDEO_PLAYER="smplayer"
+#VIDEO_PLAYER="vlc -f" # launch vlc with fullscreen
 
 config=(
 					"#All Movies"
@@ -43,8 +44,9 @@ config=(
 
 #Colours
 c_b=39		#border colour
-c_f=118		#files/folder colour
+c_f=118		#folders/unknown colour
 c_h=234		#Heading colour
+c_v=208		#Video files
 
 c_h_l=69	#Heading background colour for the configs
 c_h_c=56		#Heading font colour for the configs
@@ -72,7 +74,20 @@ c_p_m=10		#media player output font colour
 
 #End of colours
 
-
+#Add/remove all of your file types here for videos
+file_types=(
+		"mkv"
+		"mp4"
+		"avi"
+		"mov"
+		"ogg"
+		"webm"
+		"m4v"
+		"mpv"
+		"mpg"
+		"mpeg"
+		"m4p"
+	)
 
 
 current_path=""
@@ -80,7 +95,32 @@ declare -a path_history=()
 declare -a parsed_choise=()
 declare -a print_path_array=()
 path_history_count=1
+term_width=$(tput cols)
 
+function parse_file_name(){
+	term_width=$(tput cols)
+	extension="${1##*.}"
+	printed=0
+	length_name=${#1}
+	for ext in "${file_types[@]}"; do
+		if [[ "$ext" == "$extension" ]]; then
+			printed=1
+			if (( length_name > (term_width -8)  )); then
+				print -Pn "%F{$c_b}▐ $count: %F{$c_v}${1:0:((term_width -8))}..%f\n"
+			else	
+				print -Pn "%F{$c_b}▐ $count: %F{$c_v}$1 %f\n"
+			fi
+			break
+		fi	
+	done
+	if [[ $printed -eq 0 ]]; then
+		if (( length_name > (term_width -8)  )); then
+			print -Pn "%F{$c_b}▐ $count: %F{$c_f}${1:0:((term_width -8))}..%f\n"
+		else	
+			print -Pn "%F{$c_b}▐ $count: %F{$c_f}$1 %f\n"
+		fi
+	fi
+}
 
 function print_menu_statup_options(){
 	if [[ ! -z $1 ]]; then
@@ -100,7 +140,8 @@ function print_menu_statup(){
 		if [[ ${i:0:1} == "#" ]] ; then
 			print -Pn "%F{$c_b}▐%K{$c_h_l}    %F{$c_h_c}${i:1}         %k%F{$c_h_l}\n"
 		else	
-			print -Pn "%F{$c_b}▐ $count: %F{$c_f}$i %f\n"
+			# print -Pn "%F{$c_b}▐ $count: %F{$c_f}$i %f\n"
+			parse_file_name "$i"
 			parsed_choise[$count]=$i
 
 			(( count++ ))
@@ -110,7 +151,13 @@ function print_menu_statup(){
 }
 
 function print_menu_path_loop_options(){
-	print -Pn "%F{$c_s_l1}▐%K{$c_s_l1} %F{$c_s_c1}currently in %F{$c_current_path}$current_path %k%F{$c_s_l1}\n"
+	term_width=$(tput cols)
+	length_name=${#current_path}
+	if (( length_name > (term_width -17)  )); then
+		print -Pn "%F{$c_s_l1}▐%K{$c_s_l1} %F{$c_s_c1}currently in %F{$c_current_path}${current_path:0:((term_width -18))}..%k%F{$c_s_l1}\n"	
+	else	
+		print -Pn "%F{$c_s_l1}▐%K{$c_s_l1} %F{$c_s_c1}currently in %F{$c_current_path}$current_path %k%F{$c_s_l1}\n"
+	fi
 	if [[ ! -z $1 ]]; then
 		print -Pn "%F{$c_e_l}▐%K{$c_e_l} %F{$c_e_c}$1%k%F{$c_e_l}\n"
 	fi
@@ -123,25 +170,31 @@ function print_menu_path_loop(){
 	echo
 	count=1
 	print -Pn "%F{$c_b}▐%K{$c_b}            %F{$c_h}Movie Picker              %k%F{$c_b}\n"
-	for i in "${print_path_array[@]}"
-	do
-		print -Pn "%F{$c_b}▐ $count: %F{$c_f}$i %f\n"
+	for i in "${print_path_array[@]}"; do
+		parse_file_name "$i"
 		(( count++ ))
 	done
 	print_menu_path_loop_options $1
 }
 
 function print_header(){
-	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}      __  __            _        _____ _      _                  %k%F{$c_b}\n"             
-	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     |  \\\/  |          (_)      |  __ (_)    | |                 %k%F{$c_b}\n"          
-	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     | \\\  / | _____   ___  ___  | |__) |  ___| | _____ _ __      %k%F{$c_b}\n"
-	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     | |\\\/| |/ _ \\\ \\\ / / |/ _ \\\ |  ___/ |/ __| |/ / _ \\\ '__|     %k%F{$c_b}\n"
-	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     | |  | | (_) \\\ V /| |  __/ | |   | | (__|   <  __/ |        %k%F{$c_b}\n"
-	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     |_|  |_|\\\___/ \\\_/ |_|\\\___| |_|   |_|\\\___|_|\\\_\\\___|_|        %k%F{$c_b}\n"
-	print -Pn "%F{$c_b}▐%K{$c_b}                                                                 %k%F{$c_b}\n"
-	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}            By ArtiomSu https://github.com/ArtiomSu/             %k%F{$c_b}\n"
-	print -Pn "%F{$c_b}▐%K{$c_b}                                                                 %k%F{$c_b}\n"
-}
+	term_width=$(tput cols)
+	if (( term_width <  67)); then
+		print -Pn "%F{$c_b}▐%K{$c_b}            %F{$c_h}Movie Picker               %k%F{$c_b}\n"
+		print -Pn "%F{$c_b}▐%K{$c_b}            %F{$c_h}By ArtiomSu                %k%F{$c_b}\n"
+		print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}(Increase terminal width for better ui)%k%F{$c_b}\n"
+	else
+		print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}      __  __            _        _____ _      _                  %k%F{$c_b}\n"             
+		print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     |  \\\/  |          (_)      |  __ (_)    | |                 %k%F{$c_b}\n"          
+		print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     | \\\  / | _____   ___  ___  | |__) |  ___| | _____ _ __      %k%F{$c_b}\n"
+		print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     | |\\\/| |/ _ \\\ \\\ / / |/ _ \\\ |  ___/ |/ __| |/ / _ \\\ '__|     %k%F{$c_b}\n"
+		print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     | |  | | (_) \\\ V /| |  __/ | |   | | (__|   <  __/ |        %k%F{$c_b}\n"
+		print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     |_|  |_|\\\___/ \\\_/ |_|\\\___| |_|   |_|\\\___|_|\\\_\\\___|_|        %k%F{$c_b}\n"
+		print -Pn "%F{$c_b}▐%K{$c_b}                                                                 %k%F{$c_b}\n"
+		print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}            By ArtiomSu https://github.com/ArtiomSu/             %k%F{$c_b}\n"
+		print -Pn "%F{$c_b}▐%K{$c_b}                                                                 %k%F{$c_b}\n"
+	fi
+	}
 
 function print_exit(){ 
 	print_header
@@ -228,11 +281,30 @@ function path_loop(){
 				(( path_history_count++ ))
 				path_loop
 			else
-				print -Pn "%F{$c_p_l}▐%K{$c_p_l} %F{$c_p_c}playing $test_path %k%F{$c_p_l}\n%F{$c_p_m} "
-				play_command="$VIDEO_PLAYER '$test_path'"
-				#smplayer $current_path 
-				eval $play_command
-				print_menu_path_loop
+				extension="${test_path##*.}"
+				ok_to_play=0
+				length_name=${#test_path}
+				term_width=$(tput cols)
+				for ext in "${file_types[@]}"; do
+					if [[ "$ext" == "$extension" ]]; then
+						ok_to_play=1
+						if (( length_name > (term_width -12)  )); then
+							print -Pn "%F{$c_p_l}▐%K{$c_p_l} %F{$c_p_c}playing ${test_path:0:((term_width -15))}..%k%F{$c_p_l}\n%F{$c_p_m}"
+						else	
+							print -Pn "%F{$c_p_l}▐%K{$c_p_l} %F{$c_p_c}playing $test_path %k%F{$c_p_l}\n%F{$c_p_m}"
+						fi
+						break
+					fi	
+				done
+
+				if [[ $ok_to_play -eq 1 ]];then
+					play_command="$VIDEO_PLAYER '$test_path'"
+					#smplayer $current_path 
+					eval $play_command
+					print_menu_path_loop
+				else
+					print_menu_path_loop "Cannot play A non video file (check file_types)" 
+				fi
 			fi
 
 			
@@ -247,29 +319,33 @@ function exit_cleanly(){
 }
 
 function print_help(){
-	print_header
-	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     Movie picker Allows you to easily and quickly nagivate      %k%F{$c_b}\n"
-	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     your movie directories.                                     %k%F{$c_b}\n"
+	term_width=$(tput cols)
+	if (( term_width <  67)); then
+		print -Pn "%F{$c_b}▐%K{$c_b}            %F{$c_h}Movie Picker               %k%F{$c_b}\n"
+		print -Pn "%F{$c_b}▐%K{$c_b}            %F{$c_h}By ArtiomSu                %k%F{$c_b}\n"
+		print -Pn "%F{$c_e_l}▐%K{$c_e_l}%F{$c_e_c}Increase terminal width to display help%k%F{$c_e_l}\n"
+	else	
+		print_header
+		print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     Movie picker Allows you to easily and quickly nagivate      %k%F{$c_b}\n"
+		print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     your movie directories.                                     %k%F{$c_b}\n"
 
-	print -Pn "%F{$c_b}▐%K{$c_b}                                                                 %k%F{$c_b}\n"
+		print -Pn "%F{$c_b}▐%K{$c_b}                                                                 %k%F{$c_b}\n"
 
-	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     At the top of the script you will need to add your movies   %k%F{$c_b}\n"
-	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     folders into the config array. The more folders             %k%F{$c_b}\n"
-	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     you have the more usefull this script will be as they are   %k%F{$c_b}\n"
-	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     essentially shortcuts.                                      %k%F{$c_b}\n"
+		print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     At the top of the script you will need to add your movies   %k%F{$c_b}\n"
+		print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     folders into the config array. The more folders             %k%F{$c_b}\n"
+		print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     you have the more usefull this script will be as they are   %k%F{$c_b}\n"
+		print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     essentially shortcuts.                                      %k%F{$c_b}\n"
 
-	print -Pn "%F{$c_b}▐%K{$c_b}                                                                 %k%F{$c_b}\n"
+		print -Pn "%F{$c_b}▐%K{$c_b}                                                                 %k%F{$c_b}\n"
 
-	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     You can add headers to your config which will show up       %k%F{$c_b}\n"
-	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     in the menu. This is handy for spliting up text if you      %k%F{$c_b}\n"
-	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     have alot of things in the config. The headers are purely   %k%F{$c_b}\n"
-	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     for visual purposes and must start with a #, the # will     %k%F{$c_b}\n"
-	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     obviously be ignored when printing to the screen            %k%F{$c_b}\n"
-				
-	print -Pn "%F{$c_b}▐%K{$c_b}                                                                 %k%F{$c_b}\n"
-
-
-		
+		print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     You can add headers to your config which will show up       %k%F{$c_b}\n"
+		print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     in the menu. This is handy for spliting up text if you      %k%F{$c_b}\n"
+		print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     have alot of things in the config. The headers are purely   %k%F{$c_b}\n"
+		print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     for visual purposes and must start with a #, the # will     %k%F{$c_b}\n"
+		print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     obviously be ignored when printing to the screen            %k%F{$c_b}\n"
+					
+		print -Pn "%F{$c_b}▐%K{$c_b}                                                                 %k%F{$c_b}\n"
+	fi		
 }
 
 function main(){
