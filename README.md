@@ -1,4 +1,6 @@
 # MoviePickerZSH
+View on my [website](https://artiomsu.github.io/?cat=container_Projects&iteminner=null&catonly=0&item=container_moviepicker)
+
 ![Help](https://github.com/ArtiomSu/MoviePickerZSH/blob/main/screenshots/h.png)
 
 MoviePicker is writen in zsh since dealing with colours is alot easier than with bash. You can run it with bash without any issues after changing all the print commands with the appropriate colour codes.
