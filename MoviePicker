@@ -1,14 +1,6 @@
 #!/usr/bin/env zsh
 
 
-# /nas/nfs-8tbhdd/Movies
-# /nas/nfs-8tbhdd/Movies/0 New Movies
-# /nas/nfs-8tbhdd/Series
-# /nas/nfs-movies/movies
-# /nas/nfs-movies/new_movies
-# /nas/nfs-movies/series
-# /nas/nfs-movies/new_series
-
 #change to your prefered video player with appropriate arguements
 VIDEO_PLAYER="smplayer"
 #VIDEO_PLAYER="vlc -f" # launch vlc with fullscreen
@@ -71,7 +63,6 @@ c_e_c=184		#error font colour
 c_p_l=24		#playing background colour
 c_p_c=163		#playing font colour
 c_p_m=10		#media player output font colour
-
 #End of colours
 
 #Add/remove all of your file types here for videos
@@ -88,6 +79,43 @@ file_types=(
 		"mpeg"
 		"m4p"
 	)
+
+#themes uncomment line to enable a different theme by default otherwise you can use MoviePicker -t amber for example
+
+#Black and white
+#c_b=237; c_f=247; c_h=233; c_v=254; c_h_l=241; c_h_c=232; c_s_l1=236; c_s_l2=235; c_s_l3=234; c_s_c1=246; c_s_c2=245; c_s_c3=244; c_current_path=248; c_s_option=255; c_hist_l=240; c_hist_c=247; c_e_l=255; c_e_c=234; c_p_l=240; c_p_c=246; c_p_m=237
+
+#Amber
+#c_b=208; c_f=202; c_h=234; c_v=39; c_h_l=166; c_h_c=232; c_s_l1=209; c_s_l2=210; c_s_l3=211; c_s_c1=237; c_s_c2=236; c_s_c3=235; c_current_path=3; c_s_option=88; c_hist_l=212; c_hist_c=235; c_e_l=88; c_e_c=184; c_p_l=208; c_p_c=235; c_p_m=209
+
+#Red Shitf
+#c_b=88; c_f=90; c_h=234; c_v=197; c_h_l=124; c_h_c=237; c_s_l1=89; c_s_l2=90; c_s_l3=91; c_s_c1=196; c_s_c2=160; c_s_c3=161; c_current_path=23; c_s_option=83; c_hist_l=35; c_hist_c=23; c_e_l=88; c_e_c=184; c_p_l=124; c_p_c=91; c_p_m=124
+
+
+#default template leave commented
+#c_b=39; c_f=118; c_h=234; c_v=208; c_h_l=69; c_h_c=56; c_s_l1=38; c_s_l2=37; c_s_l3=36; c_s_c1=26; c_s_c2=25; c_s_c3=24; c_current_path=28; c_s_option=91; c_hist_l=35; c_hist_c=23; c_e_l=88; c_e_c=184; c_p_l=24; c_p_c=163; c_p_m=10
+
+#add your custom theme to this function
+function theme_chooser(){
+	if [[ -z $1 ]];then
+		#print themes
+		print -Pn "%F{$c_b}▐%K{$c_b}  %F{$c_h}Supply theme name as arguement after -t    %k%F{$c_b}\n"
+		print -Pn "%F{237}▐%K{237}            %F{233}blacknwhite                      %k%F{237}\n"
+		print -Pn "%F{208}▐%K{208}            %F{234}amber                            %k%F{208}\n"
+		print -Pn "%F{88}▐%K{88}            %F{234}redshift                         %k%F{88}\n"
+		exit 0
+	elif [[ "$1" == "blacknwhite" ]];then
+		c_b=237; c_f=247; c_h=233; c_v=254; c_h_l=241; c_h_c=232; c_s_l1=236; c_s_l2=235; c_s_l3=234; c_s_c1=246; c_s_c2=245; c_s_c3=244; c_current_path=248; c_s_option=255; c_hist_l=240; c_hist_c=247; c_e_l=255; c_e_c=234; c_p_l=240; c_p_c=246; c_p_m=237
+
+	elif [[ "$1" == "amber" ]];then
+		c_b=208; c_f=202; c_h=234; c_v=39; c_h_l=166; c_h_c=232; c_s_l1=209; c_s_l2=210; c_s_l3=211; c_s_c1=237; c_s_c2=236; c_s_c3=235; c_current_path=3; c_s_option=88; c_hist_l=212; c_hist_c=235; c_e_l=88; c_e_c=184; c_p_l=208; c_p_c=235; c_p_m=209
+	elif [[ "$1" == "redshift" ]];then
+		c_b=88; c_f=90; c_h=234; c_v=197; c_h_l=124; c_h_c=237; c_s_l1=89; c_s_l2=90; c_s_l3=91; c_s_c1=196; c_s_c2=160; c_s_c3=161; c_current_path=23; c_s_option=83; c_hist_l=35; c_hist_c=23; c_e_l=88; c_e_c=184; c_p_l=124; c_p_c=91; c_p_m=124
+	else 
+		startup "couldn't find theme with name $1"
+	fi
+	startup
+}
 
 
 current_path=""
@@ -202,7 +230,7 @@ function print_exit(){
 }
 
 function startup(){
-	print_menu_statup
+	print_menu_statup $1
 
 	while [[ 1 -eq 1 ]]; do
 		read input
@@ -345,6 +373,18 @@ function print_help(){
 		print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     obviously be ignored when printing to the screen            %k%F{$c_b}\n"
 					
 		print -Pn "%F{$c_b}▐%K{$c_b}                                                                 %k%F{$c_b}\n"
+
+		print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     Themes: You can set themes via commandline arguements.      %k%F{$c_b}\n"
+		print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     To see all themes available type -t                         %k%F{$c_b}\n"
+		print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     To set the black and white theme for example type           %k%F{$c_b}\n"
+		print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     -t blacknwhite                                              %k%F{$c_b}\n"
+		print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     To override the default theme you can uncomment the theme   %k%F{$c_b}\n"
+		print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     Line within the script at the top. This is handy so that    %k%F{$c_b}\n"
+		print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     you dont have to supply a theme name everytime if you don't %k%F{$c_b}\n"
+		print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     Like the default theme.                                     %k%F{$c_b}\n"
+
+		print -Pn "%F{$c_b}▐%K{$c_b}                                                                 %k%F{$c_b}\n"
+
 	fi		
 }
 
@@ -352,6 +392,8 @@ function main(){
 	if [[ "$1" == "h" || "$1" == "-h" || "$1" == "--help" ]]; then
 		echo
 		print_help
+	elif [[ "$1" == "t" || "$1" == "-t" || "$1" == "--theme" ]]; then
+		theme_chooser "$2"
 	else
 		startup
 	fi
