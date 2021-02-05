@@ -1,0 +1,289 @@
+#!/usr/bin/env zsh
+
+
+# /nas/nfs-8tbhdd/Movies
+# /nas/nfs-8tbhdd/Movies/0 New Movies
+# /nas/nfs-8tbhdd/Series
+# /nas/nfs-movies/movies
+# /nas/nfs-movies/new_movies
+# /nas/nfs-movies/series
+# /nas/nfs-movies/new_series
+
+#change to your prefered video player with appropriate arguements
+VIDEO_PLAYER="smplayer"
+
+config=(
+					"#All Movies"
+					"/nas/nfs-8tbhdd/Movies" 
+					"/nas/nfs-8tbhdd/Movies/0 New Movies"
+					"/nas/nfs-movies/movies" 
+					"/nas/nfs-movies/new_movies" 
+					"#All Series"
+					"/nas/nfs-8tbhdd/Series"  
+					"/nas/nfs-movies/series" 
+					"/nas/nfs-movies/new_series" 
+					"#Series Left to Watch"
+					"/nas/nfs-8tbhdd/Series/Altered Carbon/Altered Carbon Season 2 2160p"
+					"/nas/nfs-8tbhdd/Series/American_Gods_S03"
+					"/nas/nfs-8tbhdd/Series/BatwomanS02"
+					"/nas/nfs-8tbhdd/Series/Better Call Saul"
+					"/nas/nfs-8tbhdd/Series/His Dark Materials S02"
+					"/nas/nfs-8tbhdd/Series/The Mandalorian S02"
+					"/nas/nfs-8tbhdd/Series/The Chilling Adventrures of Sabrina S04"
+					"/nas/nfs-8tbhdd/Series/Watchmen Season 1"
+					"#Movie Trilogies.."
+					"/nas/nfs-8tbhdd/Movies/The Matrix Trilogy (1999-2003)"
+					"/nas/nfs-8tbhdd/Movies/The Resident Evil"
+					"/nas/nfs-movies/movies/Alien.movies"
+					"/nas/nfs-movies/movies/Harry Potters"
+					"/nas/nfs-movies/movies/Pirates Of The Caribbean"
+					"/nas/nfs-movies/movies/terminators"
+					"/nas/nfs-movies/movies/underworld 4 movies"
+				)
+
+#Colours
+c_b=39		#border colour
+c_f=118		#files/folder colour
+c_h=234		#Heading colour
+
+c_h_l=69	#Heading background colour for the configs
+c_h_c=56		#Heading font colour for the configs
+
+c_s_l1=38	#background colour for first layer at the bottom
+c_s_l2=37
+c_s_l3=36
+
+c_s_c1=26	#font colour for first layer at the bottom
+c_s_c2=25
+c_s_c3=24
+
+c_current_path=28 #font colour for "currently in ..."
+c_s_option=91	  #font colour for the options buttons
+
+c_hist_l=35		#background colour for history
+c_hist_c=23		#font colour for history
+
+c_e_l=88		#error backround colour
+c_e_c=184		#error font colour
+
+c_p_l=24		#playing background colour
+c_p_c=163		#playing font colour
+c_p_m=10		#media player output font colour
+
+#End of colours
+
+
+
+
+current_path=""
+declare -a path_history=()
+declare -a parsed_choise=()
+declare -a print_path_array=()
+path_history_count=1
+
+
+function print_menu_statup_options(){
+	if [[ ! -z $1 ]]; then
+		print -Pn "%F{$c_e_l}▐%K{$c_e_l} %F{$c_e_c}$1%k%F{$c_e_l}\n"
+	fi
+	print -Pn "%F{$c_s_l1}▐%K{$c_s_l1} %F{$c_s_c1}options: [%F{$c_s_option}e%F{$c_s_c1}]xit [%F{$c_s_option}h%F{$c_s_c1}]elp %k%F{$c_s_l1}\n"
+	print -Pn "%F{$c_s_l2}▐%K{$c_s_l2} %F{$c_s_c2}choose location [%F{$c_s_option}1-${#parsed_choise[@]}%F{$c_s_c2}]%k%F{$c_s_l2}%k%f"
+}
+
+function print_menu_statup(){
+	clear
+	echo
+	count=1
+	#print -Pn "%F{$c_b}▐%K{$c_b}            %F{$c_h}Movie Picker              %k%F{$c_b}\n"
+	print_header
+	for i in "${config[@]}"; do
+		if [[ ${i:0:1} == "#" ]] ; then
+			print -Pn "%F{$c_b}▐%K{$c_h_l}    %F{$c_h_c}${i:1}         %k%F{$c_h_l}\n"
+		else	
+			print -Pn "%F{$c_b}▐ $count: %F{$c_f}$i %f\n"
+			parsed_choise[$count]=$i
+
+			(( count++ ))
+		fi	
+	done
+	print_menu_statup_options $1
+}
+
+function print_menu_path_loop_options(){
+	print -Pn "%F{$c_s_l1}▐%K{$c_s_l1} %F{$c_s_c1}currently in %F{$c_current_path}$current_path %k%F{$c_s_l1}\n"
+	if [[ ! -z $1 ]]; then
+		print -Pn "%F{$c_e_l}▐%K{$c_e_l} %F{$c_e_c}$1%k%F{$c_e_l}\n"
+	fi
+	print -Pn "%F{$c_s_l2}▐%K{$c_s_l2} %F{$c_s_c2}options: [%F{$c_s_option}b%F{$c_s_c2}]ack [%F{$c_s_option}h%F{$c_s_c2}]istory [%F{$c_s_option}e%F{$c_s_c2}]xit%k%F{$c_s_l2}\n"
+	print -Pn "%F{$c_s_l3}▐%K{$c_s_l3} %F{$c_s_c3}choose media [%F{$c_s_option}1-${#print_path_array[@]}%F{$c_s_c3}]%k%F{$c_s_l3}%k%f"
+}
+
+function print_menu_path_loop(){
+	clear
+	echo
+	count=1
+	print -Pn "%F{$c_b}▐%K{$c_b}            %F{$c_h}Movie Picker              %k%F{$c_b}\n"
+	for i in "${print_path_array[@]}"
+	do
+		print -Pn "%F{$c_b}▐ $count: %F{$c_f}$i %f\n"
+		(( count++ ))
+	done
+	print_menu_path_loop_options $1
+}
+
+function print_header(){
+	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}      __  __            _        _____ _      _                  %k%F{$c_b}\n"             
+	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     |  \\\/  |          (_)      |  __ (_)    | |                 %k%F{$c_b}\n"          
+	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     | \\\  / | _____   ___  ___  | |__) |  ___| | _____ _ __      %k%F{$c_b}\n"
+	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     | |\\\/| |/ _ \\\ \\\ / / |/ _ \\\ |  ___/ |/ __| |/ / _ \\\ '__|     %k%F{$c_b}\n"
+	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     | |  | | (_) \\\ V /| |  __/ | |   | | (__|   <  __/ |        %k%F{$c_b}\n"
+	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     |_|  |_|\\\___/ \\\_/ |_|\\\___| |_|   |_|\\\___|_|\\\_\\\___|_|        %k%F{$c_b}\n"
+	print -Pn "%F{$c_b}▐%K{$c_b}                                                                 %k%F{$c_b}\n"
+	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}            By ArtiomSu https://github.com/ArtiomSu/             %k%F{$c_b}\n"
+	print -Pn "%F{$c_b}▐%K{$c_b}                                                                 %k%F{$c_b}\n"
+}
+
+function print_exit(){ 
+	print_header
+	exit 0
+}
+
+function startup(){
+	print_menu_statup
+
+	while [[ 1 -eq 1 ]]; do
+		read input
+		if [[ -z $input ]]; then
+			print_menu_statup "Please Enter One of The Following options"
+			continue
+		fi	
+
+		new_path=${parsed_choise[$input]}
+
+		if [[ $input == "e" ]]; then
+			print_exit
+		elif [[ $input == "h" ]]; then
+			print_help
+			print_menu_statup_options	
+		elif [[ -z $new_path ]]; then
+			print_menu_statup "Please Enter One of The Following options"
+		else
+			current_path=$new_path
+			path_history[$path_history_count]=$current_path
+			(( path_history_count++ ))
+			#echo "changing to path $new_path"
+			path_loop
+		fi
+	done	
+}
+
+function path_loop(){
+	IFS=$'\n' 
+	array=($(ls -1 $current_path))
+	print_path_array=("${array[@]}")
+
+	print_menu_path_loop
+
+	while [[ 1 -eq 1 ]]; do
+		read input
+
+		if [[ -z $input ]]; then
+			print_menu_path_loop "Please Enter One of The Following options"
+			continue
+		fi
+
+		new_path=${array[$input]}
+		# echo "you choose $input $new_path"
+		if [[ $input == "b" ]]; then
+				if [[ $path_history_count -gt 1 ]]; then
+					(( path_history_count-- ))
+					if [[ $path_history_count -eq 1 ]]; then
+						startup
+					else	
+						current_path=${path_history[(( path_history_count -1 ))]}
+						# echo " count = $path_history_count and going back to $current_path"
+						path_loop
+					fi
+				else
+					print_menu_path_loop "Cannot go back further"
+				fi	
+
+		elif [[ $input == "e" ]]; then
+			print_exit	
+		elif [[ $input == "h" ]]; then
+			print -Pn "%F{$c_hist_l}▐%K{$c_hist_l} %F{$c_hist_c}path count is $path_history_count history is:%k%F{$c_hist_l}\n"
+			for hist_item in "${path_history[@]}"; do
+				print -Pn "%F{$c_hist_l}▐%K{$c_hist_l} %F{$c_hist_c}$hist_item%k%F{$c_hist_l}\n"
+			done
+			print_menu_path_loop_options	
+		elif [[ -z $new_path ]]; then
+			print_menu_path_loop "Please Enter One of The Following options"
+
+		else
+			test_path=${current_path}/$new_path
+			if [[ -d $test_path ]]; then
+				# echo "changing to path $current_path"
+				current_path=$test_path
+				path_history[$path_history_count]=$current_path
+				(( path_history_count++ ))
+				path_loop
+			else
+				print -Pn "%F{$c_p_l}▐%K{$c_p_l} %F{$c_p_c}playing $test_path %k%F{$c_p_l}\n%F{$c_p_m} "
+				play_command="$VIDEO_PLAYER '$test_path'"
+				#smplayer $current_path 
+				eval $play_command
+				print_menu_path_loop
+			fi
+
+			
+		fi
+	done	
+}
+
+function exit_cleanly(){
+	#todo close player if open?
+	echo
+	print_exit
+}
+
+function print_help(){
+	print_header
+	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     Movie picker Allows you to easily and quickly nagivate      %k%F{$c_b}\n"
+	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     your movie directories.                                     %k%F{$c_b}\n"
+
+	print -Pn "%F{$c_b}▐%K{$c_b}                                                                 %k%F{$c_b}\n"
+
+	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     At the top of the script you will need to add your movies   %k%F{$c_b}\n"
+	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     folders into the config array. The more folders             %k%F{$c_b}\n"
+	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     you have the more usefull this script will be as they are   %k%F{$c_b}\n"
+	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     essentially shortcuts.                                      %k%F{$c_b}\n"
+
+	print -Pn "%F{$c_b}▐%K{$c_b}                                                                 %k%F{$c_b}\n"
+
+	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     You can add headers to your config which will show up       %k%F{$c_b}\n"
+	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     in the menu. This is handy for spliting up text if you      %k%F{$c_b}\n"
+	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     have alot of things in the config. The headers are purely   %k%F{$c_b}\n"
+	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     for visual purposes and must start with a #, the # will     %k%F{$c_b}\n"
+	print -Pn "%F{$c_b}▐%K{$c_b}%F{$c_h}     obviously be ignored when printing to the screen            %k%F{$c_b}\n"
+				
+	print -Pn "%F{$c_b}▐%K{$c_b}                                                                 %k%F{$c_b}\n"
+
+
+		
+}
+
+function main(){
+	if [[ "$1" == "h" || "$1" == "-h" || "$1" == "--help" ]]; then
+		echo
+		print_help
+	else
+		startup
+	fi
+}
+
+trap 'exit_cleanly' SIGINT
+
+main $@
+
+
+
